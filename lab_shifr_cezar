@@ -1,0 +1,19 @@
+def encrypt_caesar(plaintext):
+    text = plaintext
+    ciphertext = ''
+    for symb in text:
+        num_symb = ord(symb)
+        ciphertext += chr(num_symb + 3)
+    return ciphertext
+
+
+def decrypt_caesar(ciphertext):
+    text_decrypt = ciphertext
+    plaintext = ""
+    for symb in text_decrypt:
+        num_symb = ord(symb)
+        plaintext += chr(num_symb - 3)
+    return plaintext
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
