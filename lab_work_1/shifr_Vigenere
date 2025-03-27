@@ -1,0 +1,47 @@
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+"""Кодирование шифром Виженера"""
+def encrypt_vigenere(plaintext, keyword):
+    ciphertext = ""
+    ind = 0
+    if len(plaintext)%len(keyword) == 0:
+        key = keyword*(len(plaintext)//len(keyword))
+    else:
+        ost = len(plaintext)%len(keyword)
+        key = (keyword*(len(plaintext)//len(keyword))) + keyword[:ost]
+    for symb in plaintext:
+        if symb.upper() not in alphabet:
+            ciphertext += symb
+        else:
+            if symb.isupper():
+                num_symb, num_symb1 = alphabet.find(key[ind]), alphabet.find(symb)
+                ciphertext += alphabet[num_symb1+num_symb]
+            else:
+                num_symb, num_symb1 = alphabet.find(key[ind].upper()), alphabet.find(symb.upper())
+                ciphertext += alphabet[num_symb1+num_symb].lower()
+        ind += 1
+    return ciphertext
+"""Декодирование шифром Виженера"""
+def decrypt_vigenere(ciphertext, keyword):
+    plaintext = ""
+    ind = 0
+    if len(ciphertext) % len(keyword) == 0:
+        key = keyword * (len(ciphertext) // len(keyword))
+    else:
+        ost = len(ciphertext) % len(keyword)
+        key = (keyword * (len(ciphertext) // len(keyword))) + keyword[:ost]
+    for symb in ciphertext:
+        if symb.upper() not in alphabet:
+            plaintext += symb
+        else:
+            if symb.isupper():
+                num_symb, num_symb1 = alphabet.find(key[ind]), alphabet.rfind(symb)
+                plaintext += alphabet[num_symb1 - num_symb]
+            else:
+                num_symb, num_symb1 = alphabet.find(key[ind].upper()), alphabet.rfind(symb.upper())
+                plaintext += alphabet[num_symb1 - num_symb].lower()
+        ind += 1
+    return plaintext
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
