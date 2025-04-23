@@ -1,0 +1,96 @@
+"ACCESS_TOKEN - это код доступа к телеграм боту(сначала его нужно зарегистрировать в BotFather"
+import telebot
+import requests
+import config
+import time
+from bs4 import BeautifulSoup
+
+
+access_token = "ТУТ БУДЕТ ВАШ ТОКЕН"
+# Создание бота с указанным токеном доступа
+bot = telebot.TeleBot(access_token)
+days_week=["monday", "tuesday", 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'monday'] # список со всеми днями недели
+week = input()
+ind = days_week.index(week)
+
+def get_page(group, week=''):
+    if week:
+        week = str(week) + '/'
+    url = 'http://www.ifmo.ru/ru/schedule/0/{week}/{group}/raspisanie_zanyatiy_GROUP.htm'.format(
+        week=week,
+        group=group)
+    response = requests.get(url)
+    web_page = response.text
+    return web_page
+
+def get_schedule(page): # получаем расписание занятий с помошью HTML-парсер
+    soup = BeautifulSoup(page, "html5lib")
+    schedule_table = soup.find("table", attrs={"id": "day"})
+    # Время проведения занятий
+    times_list = schedule_table.find_all("td", attrs={"class": "time"})
+    times_list = [time.span.text for time in times_list]
+    # Место проведения занятий
+    location_list = schedule_table.find_all("td", attrs={"class": "location"})
+    location_list = [room.span.text for room in location_list]
+    # Аудитория проведения занятий
+    audience_room = schedule_table.find_all("td", attrs={"class": "audience"})
+    audience_room = [audience.text.split('\n\n') for audience in audience_room]
+    return times_list, location_list, audience_room
+
+"""Получаем расписание на указанный день"""
+@bot.message_handler(commands=[f'{week}'])
+def get_day(message): # название группы для которой выводим расписание
+    _, group = message.text.split()
+    web_page = get_page(group)
+    times_lst, locations_lst, lessons_lst = get_schedule(web_page) # получаем время, место и расписание занятий на выбранный день
+    resp = ''
+    for time, location, lession in zip(times_lst, locations_lst, lessons_lst):
+        resp += '<b>{}</b>, {}, {}\n'.format(time, location, lession)
+
+    bot.send_message(message.chat.id, resp, parse_mode='HTML')
+
+"""Получаем расписание на следующий день"""
+@bot.message_handler(commands=[days_week[ind+1]])
+def get_tomorrow_day(message):
+    _, group = message.text.split()
+    web_page = get_page(group)
+    times_lst, locations_lst, lessons_lst = get_schedule(web_page)
+    resp = ''
+    for time, location, lession in zip(times_lst, locations_lst, lessons_lst):
+        resp += '<b>{}</b>, {}, {}\n'.format(time, location, lession)
+
+    bot.send_message(message.chat.id, resp, parse_mode='HTML')
+
+"""Получаем расписание на всю неделю"""
+@bot.message_handler(commands=[f'all week'])
+def get_all_next_week(message):
+    _, group = message.text.split()
+    web_page = get_page(group)
+    times_lst, locations_lst, lessons_lst = get_schedule(web_page)
+    resp = ''
+    for time, location, lession in zip(times_lst, locations_lst, lessons_lst):
+        resp += '<b>{}</b>, {}, {}\n'.format(time, location, lession)
+
+    bot.send_message(message.chat.id, resp, parse_mode='HTML')
+
+"""Получаем ближайший урок"""
+@bot.message_handler(commands=[f'near_lesson'])
+def get_near_lesson(message):
+    _, group = message.text.split()
+    web_page = get_page(group)
+    soup = BeautifulSoup(web_page, "html5lib")
+    schedule_table = soup.find("table", attrs={"id": "day"})
+    times_list, msg_list, lessons_list = schedule_table.find_all("td", attrs={"class": "time"}), schedule_table.find_all("td", attrs={"class": "location"}), schedule_table.find_all("td", attrs={"class": "audience"})
+    time_lst, msg_lst, lesson_lst = [time.span.text for time in times_list[0]], [lesson.span.text for lesson in msg_list[0]], [audience.span.text for audience in lessons_list[0]]
+    resp = ''
+    for time, location, lession in zip(time_lst, msg_lst, lesson_lst):
+        resp += '<b>{}</b>, {}, {}\n'.format(time, location, lession)
+
+    bot.send_message(message.chat.id, resp, parse_mode='HTML')
+
+if __name__ == '__main__':
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except Exception as e:
+            time.sleep(15)
